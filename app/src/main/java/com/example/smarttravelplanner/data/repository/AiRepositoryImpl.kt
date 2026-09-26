@@ -29,7 +29,9 @@ class AiRepositoryImpl @Inject constructor(
         startDate: String,
         notes: String,
         model: String,
-        weatherForecast: List<DayWeather>?
+        weatherForecast: List<DayWeather>?,
+        adults: Int,
+        kids: Int
     ): Result<GeneratedItineraryDto> {
         val prefs = userPreferencesRepository.userPreferences.first()
 
@@ -49,7 +51,9 @@ class AiRepositoryImpl @Inject constructor(
                 notes              = notes,
                 model              = resolvedModel,
                 weatherForecast    = weatherForecast,
-                enableWebGrounding = false
+                enableWebGrounding = false,
+                adults             = adults,
+                kids               = kids
             )
         } else {
             // Cloud Gemini (Default: gemini-3.1-flash-lite; gemini-3.8-flash if manually chosen)
@@ -68,7 +72,9 @@ class AiRepositoryImpl @Inject constructor(
                 notes              = notes,
                 model              = resolvedModel,
                 weatherForecast    = weatherForecast,
-                enableWebGrounding = prefs.enableWebGrounding
+                enableWebGrounding = prefs.enableWebGrounding,
+                adults             = adults,
+                kids               = kids
             )
         }
     }

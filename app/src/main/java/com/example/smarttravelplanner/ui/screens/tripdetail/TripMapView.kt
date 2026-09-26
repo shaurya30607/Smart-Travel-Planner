@@ -41,7 +41,8 @@ fun TripMapView(
     selectedActivityId: Long?,
     hasMapsApiKey: Boolean,
     onActivitySelected: (Long?) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onMapLoaded: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val activities = itinerary?.activities.orEmpty()
@@ -114,6 +115,9 @@ fun TripMapView(
 
     Box(modifier = modifier.fillMaxSize()) {
         if (validPoints.isEmpty()) {
+            LaunchedEffect(Unit) {
+                onMapLoaded()
+            }
             // Empty state if no coordinates
             EmptyCoordinatesView(destination = trip?.destination ?: "destination")
         } else {
@@ -135,6 +139,7 @@ fun TripMapView(
                         mapToolbarEnabled = false
                     )
                 },
+                onMapLoaded = onMapLoaded,
                 onMapClick = {
                     onActivitySelected(null)
                 }

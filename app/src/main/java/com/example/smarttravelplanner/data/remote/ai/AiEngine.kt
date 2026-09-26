@@ -19,7 +19,9 @@ interface AiEngine {
         notes: String = "",
         model: String,
         weatherForecast: List<DayWeather>? = null,
-        enableWebGrounding: Boolean = false
+        enableWebGrounding: Boolean = false,
+        adults: Int = 1,
+        kids: Int = 0
     ): Result<GeneratedItineraryDto>
 
     suspend fun chat(userMessage: String, model: String): Result<String>

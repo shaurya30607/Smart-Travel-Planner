@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -130,18 +132,34 @@ fun DestinationTripCardBase(
             modifier = Modifier.matchParentSize()
         )
 
-        // ── 2. Dark Readability Gradient Scrim ────────────────────────────────
+        val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
+        // ── 2. Readability Gradient Scrim ────────────────────────────────────
+        // In dark mode: deep atmospheric overlay.
+        // In light mode: dark veil removed; clear transparent image body with minimal soft bottom vignette.
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .background(
-                    Brush.verticalGradient(
-                        colorStops = arrayOf(
-                            0.0f to Color(0x66000000),
-                            0.45f to Color(0x77000000),
-                            1.0f to Color(0xF00B111B)
+                    if (isDark) {
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Color(0x66000000),
+                                0.45f to Color(0x77000000),
+                                1.0f to Color(0xF00B111B)
+                            )
                         )
-                    )
+                    } else {
+                        // Light mode: subtle tint across image + deep bottom contrast for effortless text readability
+                        Brush.verticalGradient(
+                            colorStops = arrayOf(
+                                0.0f to Color.Black.copy(alpha = 0.25f),
+                                0.35f to Color.Black.copy(alpha = 0.10f),
+                                0.60f to Color.Black.copy(alpha = 0.38f),
+                                1.0f to Color.Black.copy(alpha = 0.78f)
+                            )
+                        )
+                    }
                 )
         )
 
@@ -160,8 +178,16 @@ fun DestinationTripCardBase(
             ) {
                 // Status pill
                 val isPlanning = statusText.equals("Planning", ignoreCase = true)
-                val badgeBg = if (isPlanning) Amber.copy(alpha = 0.22f) else CompletedGreenBg
-                val badgeBorder = if (isPlanning) Amber.copy(alpha = 0.45f) else Color.Transparent
+                val badgeBg = if (isPlanning) {
+                    if (isDark) Amber.copy(alpha = 0.22f) else Color.Black.copy(alpha = 0.40f)
+                } else {
+                    if (isDark) CompletedGreenBg else Color.Black.copy(alpha = 0.40f)
+                }
+                val badgeBorder = if (isPlanning) {
+                    if (isDark) Amber.copy(alpha = 0.45f) else Amber.copy(alpha = 0.60f)
+                } else {
+                    if (isDark) Color.Transparent else CompletedGreen.copy(alpha = 0.60f)
+                }
                 val badgeTextColor = if (isPlanning) AmberLight else CompletedGreen
 
                 Box(
@@ -205,15 +231,27 @@ fun DestinationTripCardBase(
                     fontFamily = PlayfairFontFamily,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 26.sp
+                    fontSize = 26.sp,
+                    style = LocalTextStyle.current.copy(
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.65f),
+                            blurRadius = 8f
+                        )
+                    )
                 )
                 if (!subtitle.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(3.dp))
                     Text(
                         text = subtitle,
                         fontFamily = DmSansFontFamily,
-                        color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 13.sp
+                        color = Color.White.copy(alpha = 0.90f),
+                        fontSize = 13.sp,
+                        style = LocalTextStyle.current.copy(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.65f),
+                                blurRadius = 6f
+                            )
+                        )
                     )
                 }
                 Spacer(modifier = Modifier.height(10.dp))
@@ -221,15 +259,21 @@ fun DestinationTripCardBase(
                     Icon(
                         imageVector = Icons.Outlined.CalendarMonth,
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.75f),
+                        tint = Color.White.copy(alpha = 0.85f),
                         modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = dateText,
                         fontFamily = DmSansFontFamily,
-                        color = Color.White.copy(alpha = 0.75f),
-                        fontSize = 12.sp
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 12.sp,
+                        style = LocalTextStyle.current.copy(
+                            shadow = Shadow(
+                                color = Color.Black.copy(alpha = 0.65f),
+                                blurRadius = 6f
+                            )
+                        )
                     )
                 }
             }

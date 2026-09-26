@@ -21,6 +21,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -212,6 +215,8 @@ fun PlanScreen(
     }
 
     // ── Other preferences ─────────────────────────────────────────────────────
+    var adults             by remember { mutableIntStateOf(1) }
+    var kids               by remember { mutableIntStateOf(0) }
     var tripBudget         by remember { mutableFloatStateOf(25000f) }
     val selectedInterests  = remember { mutableStateListOf<String>() }
     var selectedStyle      by remember { mutableStateOf("balanced") }
@@ -351,6 +356,16 @@ fun PlanScreen(
                     returnDate      = returnDate,
                     tripDays        = tripDays,
                     onCalendarClick = { showDatePicker = true }
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            item {
+                PassengersSection(
+                    adults         = adults,
+                    kids           = kids,
+                    onAdultsChange = { adults = it },
+                    onKidsChange   = { kids = it }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -523,7 +538,9 @@ fun PlanScreen(
                             interests    = selectedInterests.toList(),
                             travelStyle  = selectedStyle,
                             startDate    = departureDate,
-                            notes        = finalNotes
+                            notes        = finalNotes,
+                            adults       = adults,
+                            kids         = kids
                         )
                     }
                 )
@@ -1171,6 +1188,248 @@ private fun TripDurationSection(
                     contentDescription = "Select dates",
                     tint               = Amber,
                     modifier           = Modifier.size(22.dp)
+                )
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Section: Number of Passengers (Adults & Kids)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PassengersSection(
+    adults: Int,
+    kids: Int,
+    onAdultsChange: (Int) -> Unit,
+    onKidsChange: (Int) -> Unit
+) {
+    val totalPassengers = adults + kids
+    val isDark = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+
+    PlanCard(modifier = Modifier.padding(horizontal = 16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            // Header Row: Title & Total Badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text          = "NO. OF PASSENGERS",
+                    fontFamily    = DmSansFontFamily,
+                    fontWeight    = FontWeight.SemiBold,
+                    fontSize      = 10.sp,
+                    color         = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 1.2.sp
+                )
+
+                // Total passenger badge
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Amber.copy(alpha = 0.12f),
+                    border = BorderStroke(0.8.dp, Amber.copy(alpha = 0.35f))
+                ) {
+                    Text(
+                        text = if (totalPassengers == 1) "1 Passenger" else "$totalPassengers Passengers",
+                        fontFamily = DmSansFontFamily,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 11.sp,
+                        color = Amber,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Row 1: Adults
+            PassengerCounterRow(
+                icon = Icons.Outlined.Person,
+                title = "Adults",
+                subtitle = "Age 9+ years",
+                count = adults,
+                minCount = 1,
+                maxCount = 12,
+                onDecrement = { if (adults > 1) onAdultsChange(adults - 1) },
+                onIncrement = { if (adults < 12) onAdultsChange(adults + 1) }
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                thickness = 0.6.dp
+            )
+
+            // Row 2: Kids (0-8 years)
+            PassengerCounterRow(
+                icon = Icons.Outlined.ChildCare,
+                title = "Kids",
+                subtitle = "0 – 8 years",
+                count = kids,
+                minCount = 0,
+                maxCount = 8,
+                onDecrement = { if (kids > 0) onKidsChange(kids - 1) },
+                onIncrement = { if (kids < 8) onKidsChange(kids + 1) }
+            )
+
+            // Dynamic child-friendly note banner if kids are added
+            AnimatedVisibility(
+                visible = kids > 0,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isDark) Color(0xFF1E2836) else Color(0xFFF0FDF4),
+                        border = BorderStroke(1.dp, if (isDark) Color(0xFF2E3E50) else Color(0xFFBBF7D0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.FamilyRestroom,
+                                contentDescription = null,
+                                tint = Color(0xFF10B981),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "AI will tailor child-safe activities, family dining & gentle pacing.",
+                                fontFamily = DmSansFontFamily,
+                                fontSize = 11.5.sp,
+                                color = if (isDark) Color(0xFFD1FAE5) else Color(0xFF065F46)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PassengerCounterRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    count: Int,
+    minCount: Int,
+    maxCount: Int,
+    onDecrement: () -> Unit,
+    onIncrement: () -> Unit
+) {
+    val canDecrement = count > minCount
+    val canIncrement = count < maxCount
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Icon in subtle rounded box
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Titles
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontFamily = DmSansFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = subtitle,
+                fontFamily = DmSansFontFamily,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Stepper Controls [- count +]
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Decrement Button
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (canDecrement) MaterialTheme.colorScheme.surfaceVariant
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                    )
+                    .clickable(enabled = canDecrement, onClick = onDecrement),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Remove,
+                    contentDescription = "Decrease $title",
+                    tint = if (canDecrement) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            // Count Text
+            Text(
+                text = count.toString(),
+                fontFamily = DmSansFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.widthIn(min = 24.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            // Increment Button
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (canIncrement) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                    )
+                    .border(
+                        1.dp,
+                        if (canIncrement) MaterialTheme.colorScheme.primary.copy(alpha = 0.35f) else Color.Transparent,
+                        CircleShape
+                    )
+                    .clickable(enabled = canIncrement, onClick = onIncrement),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = "Increase $title",
+                    tint = if (canIncrement) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }

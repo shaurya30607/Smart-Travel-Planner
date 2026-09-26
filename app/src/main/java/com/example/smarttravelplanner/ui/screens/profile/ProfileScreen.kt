@@ -50,6 +50,11 @@ import com.example.smarttravelplanner.ui.theme.Amber
 import com.example.smarttravelplanner.ui.theme.DmSansFontFamily
 import com.example.smarttravelplanner.ui.theme.PlayfairFontFamily
 import androidx.compose.material3.MaterialTheme
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProfileScreen(
@@ -851,154 +856,191 @@ private fun ThemeSelectionBottomSheet(
 ) {
     var selectedOption by remember { mutableStateOf(currentTheme.ifEmpty { "Device Theme" }) }
     val options = listOf("Light Theme", "Dark Theme", "Device Theme")
+    var isVisible by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xB8000000))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = onDismiss
-            ),
-        contentAlignment = Alignment.BottomCenter
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
+
+    fun animateDismiss(action: () -> Unit = onDismiss) {
+        if (!isVisible) return
+        coroutineScope.launch {
+            isVisible = false
+            delay(280)
+            action()
+        }
+    }
+
+    BackHandler(enabled = isVisible) {
+        animateDismiss()
+    }
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+        exit = fadeOut(animationSpec = tween(durationMillis = 280))
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
+                .background(Color(0xB8000000))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
-                    onClick = {}
+                    onClick = { animateDismiss() }
                 ),
-            horizontalAlignment = Alignment.CenterHorizontally
+            contentAlignment = Alignment.BottomCenter
         ) {
-            // Floating Close Button above sheet
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(46.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                    .clickable(onClick = onDismiss),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Bottom Sheet Container
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 22.dp)
-                        .navigationBarsPadding(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Header Title
-                    Text(
-                        text = "Select Appearance",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = PlayfairFontFamily,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center
+                    .fillMaxWidth()
+                    .animateEnterExit(
+                        enter = slideInVertically(
+                            initialOffsetY = { fullHeight -> fullHeight },
+                            animationSpec = tween(durationMillis = 350, easing = FastOutSlowInEasing)
+                        ),
+                        exit = slideOutVertically(
+                            targetOffsetY = { fullHeight -> fullHeight },
+                            animationSpec = tween(durationMillis = 280, easing = FastOutLinearInEasing)
+                        )
                     )
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = {}
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Floating Close Button above sheet
+                Box(
+                    modifier = Modifier
+                        .size(46.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                        .clickable(onClick = { animateDismiss() }),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                    // Options Container Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
-                        border = androidx.compose.foundation.BorderStroke(0.8.dp, MaterialTheme.colorScheme.surfaceVariant)
+                // Bottom Sheet Container
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 22.dp)
+                            .navigationBarsPadding(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            options.forEachIndexed { index, option ->
-                                val isSelected = selectedOption == option
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { selectedOption = option }
-                                        .padding(horizontal = 18.dp, vertical = 18.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = option,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        fontFamily = DmSansFontFamily,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                        // Header Title
+                        Text(
+                            text = "Select Appearance",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = PlayfairFontFamily,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Center
+                        )
 
-                                    // Custom Radio Indicator
-                                    Box(
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Options Container Card
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.background),
+                            border = androidx.compose.foundation.BorderStroke(0.8.dp, MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                options.forEachIndexed { index, option ->
+                                    val isSelected = selectedOption == option
+                                    Row(
                                         modifier = Modifier
-                                            .size(20.dp)
-                                            .clip(CircleShape)
-                                            .border(
-                                                width = if (isSelected) 2.dp else 1.5.dp,
-                                                color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                                                shape = CircleShape
-                                            ),
-                                        contentAlignment = Alignment.Center
+                                            .fillMaxWidth()
+                                            .clickable { selectedOption = option }
+                                            .padding(horizontal = 18.dp, vertical = 18.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        if (isSelected) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(10.dp)
-                                                    .clip(CircleShape)
-                                                    .background(MaterialTheme.colorScheme.onSurface)
-                                            )
+                                        Text(
+                                            text = option,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            fontFamily = DmSansFontFamily,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+
+                                        // Custom Radio Indicator
+                                        Box(
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                                .clip(CircleShape)
+                                                .border(
+                                                    width = if (isSelected) 2.dp else 1.5.dp,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    shape = CircleShape
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            if (isSelected) {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(10.dp)
+                                                        .clip(CircleShape)
+                                                        .background(MaterialTheme.colorScheme.onSurface)
+                                                )
+                                            }
                                         }
                                     }
-                                }
 
-                                if (index < options.size - 1) {
-                                    HorizontalDivider(
-                                        color = MaterialTheme.colorScheme.surfaceVariant,
-                                        thickness = 0.8.dp
-                                    )
+                                    if (index < options.size - 1) {
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.surfaceVariant,
+                                            thickness = 0.8.dp
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    // "Save" Button
-                    Button(
-                        onClick = {
-                            onSave(selectedOption)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFC85A0D)
-                        )
-                    ) {
-                        Text(
-                            text = "Save",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = DmSansFontFamily,
-                            color = Color.White
-                        )
+                        // "Save" Button
+                        Button(
+                            onClick = {
+                                animateDismiss {
+                                    onSave(selectedOption)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFC85A0D)
+                            )
+                        ) {
+                            Text(
+                                text = "Save",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = DmSansFontFamily,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }

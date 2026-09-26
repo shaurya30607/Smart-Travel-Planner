@@ -38,7 +38,9 @@ class PlanViewModel @Inject constructor(
         interests: List<String>,
         travelStyle: String = "balanced",
         startDate: LocalDate? = null,
-        notes: String = ""
+        notes: String = "",
+        adults: Int = 1,
+        kids: Int = 0
     ) {
         viewModelScope.launch {
             val prefs = userPreferences.value
@@ -69,7 +71,9 @@ class PlanViewModel @Inject constructor(
                 travelStyle  = travelStyle,
                 startDate    = startDate,
                 notes        = notes,
-                model        = model
+                model        = model,
+                adults       = adults,
+                kids         = kids
             ).onSuccess { tripId ->
                 _uiState.value = PlanUiState.ItineraryGenerated(tripId)
             }.onFailure { e ->

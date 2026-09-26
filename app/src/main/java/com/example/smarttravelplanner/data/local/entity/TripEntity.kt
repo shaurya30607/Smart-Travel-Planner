@@ -14,6 +14,8 @@ data class TripEntity(
     val startDate: String,       // ISO-8601 string
     val endDate: String,         // ISO-8601 string
     val budget: Double,
+    val adults: Int = 1,
+    val kids: Int = 0,
     val interests: List<String> = emptyList(),
     val notes: String = "",
     val coverImageUrl: String = "",

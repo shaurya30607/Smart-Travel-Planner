@@ -39,7 +39,9 @@ class GenerateTripUseCase @Inject constructor(
         travelStyle: String,
         startDate: LocalDate?,
         notes: String,
-        model: String
+        model: String,
+        adults: Int = 1,
+        kids: Int = 0
     ): Result<Long> = withContext(Dispatchers.IO) {
         runCatching {
 
@@ -66,7 +68,9 @@ class GenerateTripUseCase @Inject constructor(
             startDate       = startDateStr,
             notes           = notes,
             model           = model,
-            weatherForecast = weatherForecast
+            weatherForecast = weatherForecast,
+            adults          = adults,
+            kids            = kids
         ).getOrThrow()
 
         // Step 3 — Build Trip domain object and persist it
@@ -84,7 +88,9 @@ class GenerateTripUseCase @Inject constructor(
             budget        = budget,
             interests     = interests,
             notes         = notes,
-            coverImageUrl = coverImageUrl
+            coverImageUrl = coverImageUrl,
+            adults        = adults,
+            kids          = kids
         )
         val tripId = tripRepository.saveTrip(trip)
 

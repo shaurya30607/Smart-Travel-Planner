@@ -31,7 +31,9 @@ interface AiRepository {
         startDate: String = "",
         notes: String = "",
         model: String,
-        weatherForecast: List<DayWeather>? = null
+        weatherForecast: List<DayWeather>? = null,
+        adults: Int = 1,
+        kids: Int = 0
     ): Result<GeneratedItineraryDto>
 
     /**

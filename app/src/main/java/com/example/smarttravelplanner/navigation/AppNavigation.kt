@@ -84,31 +84,33 @@ fun AppNavigation(
         "login", "profile", "my_profile", "manage_payments", "trip_detail/{tripId}"
     )
     val isImeVisible = androidx.compose.foundation.layout.WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
-    val showBottomNav = hiddenNavRoutes.none { currentRoute.startsWith(it.substringBefore("{")) } && !isImeVisible
+    val isNavRoute = hiddenNavRoutes.none { currentRoute.startsWith(it.substringBefore("{")) }
 
     Scaffold(
         bottomBar = {
-            AnimatedVisibility(
-                visible = showBottomNav,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
-                ) + fadeIn(animationSpec = tween(durationMillis = 400)),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
-                ) + fadeOut(animationSpec = tween(durationMillis = 300))
-            ) {
-                BottomNavigationBar(
-                    currentRoute = currentRoute,
-                    onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo("home") { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
+            if (!isImeVisible) {
+                AnimatedVisibility(
+                    visible = isNavRoute,
+                    enter = slideInVertically(
+                        initialOffsetY = { it },
+                        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+                    ) + fadeIn(animationSpec = tween(durationMillis = 200)),
+                    exit = slideOutVertically(
+                        targetOffsetY = { it },
+                        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+                    ) + fadeOut(animationSpec = tween(durationMillis = 200))
+                ) {
+                    BottomNavigationBar(
+                        currentRoute = currentRoute,
+                        onNavigate = { route ->
+                            navController.navigate(route) {
+                                popUpTo("home") { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     ) { innerPadding ->

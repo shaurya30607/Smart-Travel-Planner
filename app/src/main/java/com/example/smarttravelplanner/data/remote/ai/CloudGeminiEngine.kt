@@ -31,7 +31,9 @@ class CloudGeminiEngine @Inject constructor(
         notes: String,
         model: String,
         weatherForecast: List<DayWeather>?,
-        enableWebGrounding: Boolean
+        enableWebGrounding: Boolean,
+        adults: Int,
+        kids: Int
     ): Result<GeneratedItineraryDto> = withContext(Dispatchers.IO) {
         runCatching {
             val prefs = userPreferencesRepository.userPreferences.first()
@@ -59,7 +61,9 @@ class CloudGeminiEngine @Inject constructor(
                 startDate          = startDate,
                 notes              = notes,
                 weatherForecast    = weatherForecast,
-                enableWebGrounding = isWebGroundingEnabled
+                enableWebGrounding = isWebGroundingEnabled,
+                adults             = adults,
+                kids               = kids
             )
 
             val tools = if (isWebGroundingEnabled) {

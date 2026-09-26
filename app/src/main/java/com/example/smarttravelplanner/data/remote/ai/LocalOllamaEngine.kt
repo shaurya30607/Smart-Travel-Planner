@@ -29,7 +29,9 @@ class LocalOllamaEngine @Inject constructor(
         notes: String,
         model: String,
         weatherForecast: List<DayWeather>?,
-        enableWebGrounding: Boolean
+        enableWebGrounding: Boolean,
+        adults: Int,
+        kids: Int
     ): Result<GeneratedItineraryDto> = withContext(Dispatchers.IO) {
         runCatching {
             val userMessage = ItineraryPromptBuilder.buildUserMessage(
@@ -41,7 +43,9 @@ class LocalOllamaEngine @Inject constructor(
                 startDate          = startDate,
                 notes              = notes,
                 weatherForecast    = weatherForecast,
-                enableWebGrounding = false // Ollama has no built-in Google Search grounding
+                enableWebGrounding = false, // Ollama has no built-in Google Search grounding
+                adults             = adults,
+                kids               = kids
             )
 
             val response = ollamaApi.chat(

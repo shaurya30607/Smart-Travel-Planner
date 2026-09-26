@@ -64,9 +64,26 @@ object ItineraryPromptBuilder {
            - Strictly use valid categories: ATTRACTION, FOOD, ACCOMMODATION, TRANSPORT, NATURE, CULTURE, SHOPPING, OTHER.
            - Provide a well-rounded mix: Iconic sightseeing, authentic local culinary highlights (FOOD), cultural immersions (CULTURE), scenic or waterfront stops (NATURE), and traditional handicraft bazaars (SHOPPING).
 
-        5. BUDGET DISCIPLINE & REALISTIC COST BREAKDOWN:
-           - `estimated_cost_inr` must reflect realistic on-the-ground Indian travel costs (entry tickets, meals per person, activity fees, local transport).
-           - The sum of all activities across all days must stay comfortably within the user's allocated total budget.
+        5. BUDGET UTILIZATION & TIER-MATCHED SPENDING (CRITICAL):
+           - You MUST actively and adequately utilize 85% to 95% of the user's allocated total budget. Do NOT drastically under-allocate (e.g. spending only ₹35,000 on a ₹67,000 budget is considered a failure).
+           - Dynamically adapt the travel tier to the budget:
+             * LUXURY (High Budget, e.g. >= ₹7,000–₹12,000+ per day or >= ₹3,500/person/day):
+               - Accommodation: Include 4-star and 5-star luxury heritage resorts, palace hotels, luxury boutique villas (e.g., Taj, Oberoi, Leela, boutique heritage havelis).
+               - Dining: Fine dining, acclaimed chef restaurants, signature royal thalis, luxury rooftop cocktails and dining.
+               - Experiences & Transit: Private chauffeur-driven AC cab/SUV, exclusive private boat charters, VIP skip-the-line access, private guides, wellness/spa sessions.
+               - Nightly stay and meal costs must reflect realistic luxury rates.
+             * COMFORT / PREMIUM (Moderate Budget, e.g. ₹3,500–₹7,000 per day):
+               - Accommodation: Charming 3-4 star boutique hotels, curated heritage homestays, upscale bed & breakfasts.
+               - Dining: Acclaimed local restaurants, scenic cafes, authentic regional specialties.
+               - Experiences & Transit: Dedicated AC cabs, guided group walks, experiential activities.
+             * VALUE / BUDGET (Lower Budget, e.g. < ₹3,500 per day):
+               - Accommodation: Clean boutique hostels (Zostel, Hosteller), atmospheric guest houses, cozy homestays.
+               - Dining: Legendary local dhabas, street food trails, authentic budget-friendly eateries.
+               - Experiences & Transit: Public transit, shared cabs/autos, self-guided walking tours.
+           - MANDATORY ACCOMMODATION ACTIVITIES:
+             * Multi-day trips MUST include accommodation recommendations with category "ACCOMMODATION" reflecting nightly costs suited to the budget tier (e.g. Day 1 check-in / stay recommendation and nightly stays).
+           - PARTY-WIDE PRICING:
+             * `estimated_cost_inr` must reflect the cost for the ENTIRE traveling party (all adults and kids), not just an individual person.
 
         6. OPERATIONAL & CULTURAL REALITIES:
            - Respect opening hours, ticket counter closing times, and regular weekly closures (e.g., monuments closed Mondays/Fridays).
@@ -95,7 +112,9 @@ object ItineraryPromptBuilder {
         startDate: String,
         notes: String,
         weatherForecast: List<DayWeather>?,
-        enableWebGrounding: Boolean = false
+        enableWebGrounding: Boolean = false,
+        adults: Int = 1,
+        kids: Int = 0
     ): String {
         val interestText = interests.ifEmpty { listOf("General Sightseeing", "Local Food", "Culture") }.joinToString(", ")
         val (paceGuideline, activityCountGuideline) = when (travelStyle.lowercase()) {
@@ -111,6 +130,67 @@ object ItineraryPromptBuilder {
                 "Balanced pace harmonizing must-see landmarks, authentic dining, and relaxed evening exploration.",
                 "Provide 3 to 4 activities per day."
             )
+        }
+
+        val passengerContext = when {
+            kids > 0 -> "TRAVELERS: $adults Adults, $kids Kids (Ages 0-8 years). Total group: ${adults + kids} passengers."
+            adults > 1 -> "TRAVELERS: $adults Adults."
+            else -> "TRAVELERS: 1 Solo Adult."
+        }
+
+        val familyGuideline = if (kids > 0) {
+            """
+            
+            FAMILY & CHILD-FRIENDLY CRITERIA (0-8 YEARS):
+            - Group includes $kids young child/children (0-8 years).
+            - Keep pacing child-friendly with comfortable transit, breaks, and gentle walking distances.
+            - Ensure planned attractions are safe, engaging, and suitable for young kids (e.g. parks, beaches, interactive museums, gentle boat rides).
+            - Avoid overly strenuous trekking, extreme sports, or adult-only late-night clubs.
+            - Recommend family-friendly eateries with child-friendly meal options.
+            """.trimIndent()
+        } else ""
+
+        val totalPassengers = (adults + kids).coerceAtLeast(1)
+        val dailyBudget = budget / days.coerceAtLeast(1)
+        val perPersonDaily = dailyBudget / totalPassengers
+        val targetMinSpend = (budget * 0.85).toInt()
+        val targetMaxSpend = (budget * 0.95).toInt()
+        val nights = maxOf(days - 1, 1)
+
+        val suggestedNightlyStay = when {
+            dailyBudget >= 9000.0 || perPersonDaily >= 3500.0 -> (dailyBudget * 0.45).toInt()
+            dailyBudget >= 4000.0 || perPersonDaily >= 1800.0 -> (dailyBudget * 0.38).toInt()
+            else -> (dailyBudget * 0.30).toInt()
+        }
+
+        val budgetTierDirectives = when {
+            dailyBudget >= 9000.0 || perPersonDaily >= 3500.0 -> """
+                BUDGET TIER: LUXURY / HIGH-END
+                - User Allocated Budget: ₹${budget.toInt()} INR for $days Days (~₹${dailyBudget.toInt()}/day for $totalPassengers travelers).
+                - ACCOMMODATION: Select 4-Star to 5-Star luxury hotels, royal heritage palaces, boutique luxury villas, or high-end resorts (e.g., Taj, Oberoi, luxury havelis, 5-star experiential properties). Include real, prestigious luxury property names.
+                  Allocate approx ₹$suggestedNightlyStay per night for accommodation across the $nights nights. Include explicit "ACCOMMODATION" entries for nightly stays with these real luxury hotel names.
+                - DINING: Fine dining, royal thalis, acclaimed chef-curated restaurants, scenic luxury rooftop dinners (~₹${(dailyBudget * 0.22).toInt()} daily dining for group).
+                - TRANSPORT & EXPERIENCES: Private chauffeur-driven AC cab for all transfers, private boat charters, VIP entrance passes, exclusive cultural shows, wellness/spa sessions.
+                - TARGET TOTAL SPEND: Your sum of all activity estimated_cost_inr across all days MUST be between ₹$targetMinSpend and ₹$targetMaxSpend INR.
+            """.trimIndent()
+
+            dailyBudget >= 4000.0 || perPersonDaily >= 1800.0 -> """
+                BUDGET TIER: COMFORT / PREMIUM
+                - User Allocated Budget: ₹${budget.toInt()} INR for $days Days (~₹${dailyBudget.toInt()}/day for $totalPassengers travelers).
+                - ACCOMMODATION: Curated 3-4 star boutique hotels, charming heritage homestays, premium cottages (~₹$suggestedNightlyStay per night). Include explicit "ACCOMMODATION" entries for nightly stays.
+                - DINING: Renowned local restaurants, beloved specialty cafes, authentic regional dining (~₹${(dailyBudget * 0.22).toInt()} daily dining for group).
+                - TRANSPORT & EXPERIENCES: Dedicated AC cab/taxi, guided walks, quality paid attractions.
+                - TARGET TOTAL SPEND: Your sum of all activity estimated_cost_inr across all days MUST be between ₹$targetMinSpend and ₹$targetMaxSpend INR.
+            """.trimIndent()
+
+            else -> """
+                BUDGET TIER: VALUE / BUDGET
+                - User Allocated Budget: ₹${budget.toInt()} INR for $days Days (~₹${dailyBudget.toInt()}/day for $totalPassengers travelers).
+                - ACCOMMODATION: Top-rated boutique hostels (Zostel, Hosteller), atmospheric guest houses, clean homestays (~₹$suggestedNightlyStay per night). Include explicit "ACCOMMODATION" entries.
+                - DINING: Iconic street food stalls, legendary local dhabas, authentic budget eateries (~₹${(dailyBudget * 0.25).toInt()} daily dining for group).
+                - TRANSPORT & EXPERIENCES: Auto-rickshaws, metro, scenic walking tours, free viewpoints.
+                - TARGET TOTAL SPEND: Your sum of all activity estimated_cost_inr across all days MUST be between ₹$targetMinSpend and ₹$targetMaxSpend INR.
+            """.trimIndent()
         }
 
         val dateContext = if (startDate.isNotBlank()) {
@@ -140,14 +220,18 @@ object ItineraryPromptBuilder {
         return """
             DESTINATION: $destination
             DURATION: $days Days
+            $passengerContext
             TOTAL TRIP BUDGET: ₹${budget.toInt()} INR
             TRAVEL STYLE: $travelStyle ($paceGuideline)
             ACTIVITY TARGET: $activityCountGuideline
             CORE INTERESTS: $interestText
             
+            $budgetTierDirectives
+            
             $dateContext
             $notesContext
             $weatherContext
+            $familyGuideline
             $webGroundingContext
             
             REQUIREMENTS FOR THIS ITINERARY:
@@ -155,7 +239,11 @@ object ItineraryPromptBuilder {
             2. Distinct Daily Theme: Give each day a captivating theme capturing its unique spirit.
             3. Local Gems & Authentic Food: Recommend real, highly-rated local eateries and signature dishes that travelers rave about.
             4. Insider Tips: Include actionable timing hacks, photo spots, or booking advice in each activity description.
-            5. Budget Match: Ensure the sum of all estimated_cost_inr values across all days realistically fits within the ₹${budget.toInt()} budget.
+            5. ADEQUATE BUDGET UTILIZATION (MANDATORY & CRITICAL):
+               * You MUST allocate between ₹$targetMinSpend and ₹$targetMaxSpend INR in total across the entire itinerary (85% to 95% of ₹${budget.toInt()}).
+               * Do NOT drastically under-allocate (e.g. allocating only half the budget is strictly forbidden).
+               * Always include real "ACCOMMODATION" entries with nightly stay costs (~₹$suggestedNightlyStay/night) matching the chosen tier (e.g. luxury heritage hotels / 5-star stays for luxury budgets).
+               * All estimated_cost_inr values must account for the entire group of $totalPassengers passengers ($adults adults${if (kids > 0) ", $kids kids" else ""}).
             
             Output ONLY the raw JSON matching the required schema.
         """.trimIndent()

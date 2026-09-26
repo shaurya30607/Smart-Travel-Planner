@@ -12,7 +12,7 @@ import com.example.smarttravelplanner.data.local.entity.UserEntity
 
 @Database(
     entities = [TripEntity::class, ItineraryEntity::class, UserEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
