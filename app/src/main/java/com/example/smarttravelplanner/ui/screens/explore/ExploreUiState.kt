@@ -23,6 +23,10 @@ data class ExploreUiState(
     val inSeasonOnly: Boolean = false,
     /** Names of destinations that are in season this month (drives the "In season" badge). */
     val inSeasonNames: Set<String> = emptySet(),
+    /** When true, only destinations on the wishlist are shown. */
+    val savedOnly: Boolean = false,
+    /** Names of destinations the user has hearted. */
+    val savedNames: Set<String> = emptySet(),
     /** Destinations after search + category filters (and sorting) have been applied. */
     val destinations: List<ExploreDestination> = emptyList(),
     /** Straight-line km from [selectedCity] to each destination, keyed by destination name. */
@@ -33,5 +37,6 @@ data class ExploreUiState(
     val hasActiveFilters: Boolean
         get() = searchQuery.isNotBlank() ||
             selectedCategory != DestinationFilter.ALL ||
-            inSeasonOnly
+            inSeasonOnly ||
+            savedOnly
 }

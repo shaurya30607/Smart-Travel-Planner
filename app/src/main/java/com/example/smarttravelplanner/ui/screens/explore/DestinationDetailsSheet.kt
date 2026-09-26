@@ -57,6 +57,9 @@ fun DestinationDetailsSheet(
     destination: ExploreDestination,
     /** Whether the current month is within the destination's best season. */
     isInSeason: Boolean = false,
+    /** Whether the destination is on the wishlist. */
+    isSaved: Boolean = false,
+    onToggleSaved: () -> Unit = {},
     /** e.g. "~1,050 km from Mumbai (straight line)"; null hides the row. */
     distanceFromLabel: String? = null,
     onDismiss: () -> Unit,
@@ -108,6 +111,14 @@ fun DestinationDetailsSheet(
                                 )
                             )
                         )
+                )
+                WishlistHeartButton(
+                    isSaved = isSaved,
+                    onClick = onToggleSaved,
+                    size = 38.dp,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
                 )
                 Column(
                     modifier = Modifier

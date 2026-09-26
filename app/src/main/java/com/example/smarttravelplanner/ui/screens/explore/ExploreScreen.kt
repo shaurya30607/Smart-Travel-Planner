@@ -3,6 +3,8 @@ package com.example.smarttravelplanner.ui.screens.explore
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -64,6 +66,34 @@ private val categories = listOf(
 
 /** Accent for "In season" badges and the in-season filter chip. */
 internal val InSeasonGreen = Color(0xFF4ADE80)
+
+/** Accent for wishlist hearts and the "Saved" filter chip. */
+internal val WishlistRed = Color(0xFFF87171)
+
+/** Round heart button used on destination cards and in the details sheet. */
+@Composable
+internal fun WishlistHeartButton(
+    isSaved: Boolean,
+    onClick: () -> Unit,
+    size: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(Color(0xB30B111B))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (isSaved) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            contentDescription = if (isSaved) "Remove from saved" else "Save destination",
+            tint = if (isSaved) WishlistRed else Color.White,
+            modifier = Modifier.size(size * 0.55f)
+        )
+    }
+}
 
 @Composable
 fun ExploreScreen(
@@ -297,6 +327,7 @@ fun ExploreScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
                             .padding(horizontal = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -328,7 +359,45 @@ fun ExploreScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Wishlist filter
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (uiState.savedOnly) WishlistRed
+                                    else MaterialTheme.colorScheme.surface
+                                )
+                                .clickable { viewModel.onSavedOnlyToggled() }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.savedOnly) Icons.Filled.Favorite
+                                              else Icons.Outlined.FavoriteBorder,
+                                contentDescription = null,
+                                tint = if (uiState.savedOnly) Color(0xFF0B111B) else WishlistRed,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = "Saved (${uiState.savedNames.size})",
+                                fontFamily = DmSansFontFamily,
+                                fontSize = 12.sp,
+                                fontWeight = if (uiState.savedOnly) FontWeight.Bold else FontWeight.Medium,
+                                color = if (uiState.savedOnly) Color(0xFF0B111B) else Color(0xFF8E9BAE)
+                            )
+                        }
+
+                        // Divider between filters and sort options
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 12.dp)
+                                .width(1.dp)
+                                .height(20.dp)
+                                .background(Color(0xFF2A3342))
+                        )
 
                         ExploreSortOrder.entries.forEach { order ->
                             val isSelected = uiState.sortOrder == order
@@ -354,10 +423,10 @@ fun ExploreScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = if (uiState.inSeasonOnly) {
-                            "${filteredDestinations.size} destinations in season this month"
-                        } else {
-                            "${filteredDestinations.size} destinations"
+                        text = when {
+                            uiState.savedOnly -> "${filteredDestinations.size} saved destinations"
+                            uiState.inSeasonOnly -> "${filteredDestinations.size} destinations in season this month"
+                            else -> "${filteredDestinations.size} destinations"
                         },
                         fontFamily = DmSansFontFamily,
                         fontSize = 12.sp,
@@ -420,7 +489,11 @@ fun ExploreScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "No destinations found",
+                            text = if (uiState.savedOnly && uiState.savedNames.isEmpty()) {
+                                "No saved destinations yet"
+                            } else {
+                                "No destinations found"
+                            },
                             fontFamily = DmSansFontFamily,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
@@ -428,7 +501,11 @@ fun ExploreScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Try searching for a different city, state, or category.",
+                            text = if (uiState.savedOnly && uiState.savedNames.isEmpty()) {
+                                "Tap the heart on any destination to save it here."
+                            } else {
+                                "Try searching for a different city, state, or category."
+                            },
                             fontFamily = DmSansFontFamily,
                             fontSize = 13.sp,
                             color = OnBackgroundGray,
@@ -461,6 +538,8 @@ fun ExploreScreen(
                         destination = dest,
                         distanceLabel = uiState.distancesKm[dest.name]?.let(GeoDistance::formatKm),
                         isInSeason = dest.name in uiState.inSeasonNames,
+                        isSaved = dest.name in uiState.savedNames,
+                        onToggleSaved = { viewModel.onToggleSaved(dest) },
                         onClick = { viewModel.onDestinationClick(dest) }
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -559,6 +638,8 @@ fun ExploreScreen(
         DestinationDetailsSheet(
             destination = selected,
             isInSeason = selected.name in uiState.inSeasonNames,
+            isSaved = selected.name in uiState.savedNames,
+            onToggleSaved = { viewModel.onToggleSaved(selected) },
             distanceFromLabel = uiState.distancesKm[selected.name]?.let { km ->
                 "~${GeoDistance.formatKm(km)} from ${uiState.selectedCity} (straight line)"
             },
@@ -576,6 +657,8 @@ private fun ExploreDestinationCard(
     destination: ExploreDestination,
     distanceLabel: String?,
     isInSeason: Boolean,
+    isSaved: Boolean,
+    onToggleSaved: () -> Unit,
     onClick: () -> Unit
 ) {
     Column(
@@ -649,32 +732,43 @@ private fun ExploreDestinationCard(
                 }
             }
 
-            // Distance from the selected "From" city
-            if (distanceLabel != null) {
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(10.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xB30B111B))
-                        .padding(horizontal = 10.dp, vertical = 5.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.NearMe,
-                        contentDescription = null,
-                        tint = Amber,
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = distanceLabel,
-                        fontFamily = DmSansFontFamily,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
+            // Distance from the selected "From" city + wishlist heart
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (distanceLabel != null) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xB30B111B))
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.NearMe,
+                            contentDescription = null,
+                            tint = Amber,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = distanceLabel,
+                            fontFamily = DmSansFontFamily,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(6.dp))
                 }
+                WishlistHeartButton(
+                    isSaved = isSaved,
+                    onClick = onToggleSaved,
+                    size = 30.dp
+                )
             }
 
             // Destination Name & Location overlaid on image

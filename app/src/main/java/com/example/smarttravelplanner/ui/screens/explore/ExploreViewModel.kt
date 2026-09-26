@@ -3,6 +3,7 @@ package com.example.smarttravelplanner.ui.screens.explore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.smarttravelplanner.data.repository.DestinationRepository
+import com.example.smarttravelplanner.data.repository.WishlistRepository
 import com.example.smarttravelplanner.domain.model.DepartureCity
 import com.example.smarttravelplanner.domain.model.ExploreDestination
 import com.example.smarttravelplanner.domain.model.ExploreSortOrder
@@ -20,7 +21,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ExploreViewModel @Inject constructor(
-    private val destinationRepository: DestinationRepository
+    private val destinationRepository: DestinationRepository,
+    private val wishlistRepository: WishlistRepository
 ) : ViewModel() {
 
     /** Unfiltered catalog; [ExploreUiState.destinations] is derived from this. */
@@ -37,6 +39,16 @@ class ExploreViewModel @Inject constructor(
 
     init {
         loadDestinations()
+        observeWishlist()
+    }
+
+    /** Keeps [ExploreUiState.savedNames] in sync with the stored wishlist. */
+    private fun observeWishlist() {
+        viewModelScope.launch {
+            wishlistRepository.savedDestinations.collect { saved ->
+                updateFilters { it.copy(savedNames = saved) }
+            }
+        }
     }
 
     fun loadDestinations() {
@@ -79,6 +91,12 @@ class ExploreViewModel @Inject constructor(
 
     fun onInSeasonToggled() = updateFilters { it.copy(inSeasonOnly = !it.inSeasonOnly) }
 
+    fun onSavedOnlyToggled() = updateFilters { it.copy(savedOnly = !it.savedOnly) }
+
+    fun onToggleSaved(destination: ExploreDestination) {
+        viewModelScope.launch { wishlistRepository.toggle(destination.name) }
+    }
+
     fun onDestinationClick(destination: ExploreDestination) {
         _uiState.update { it.copy(selectedDestination = destination) }
     }
@@ -88,7 +106,12 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun clearFilters() = updateFilters {
-        it.copy(searchQuery = "", selectedCategory = DestinationFilter.ALL, inSeasonOnly = false)
+        it.copy(
+            searchQuery = "",
+            selectedCategory = DestinationFilter.ALL,
+            inSeasonOnly = false,
+            savedOnly = false
+        )
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -108,7 +131,9 @@ class ExploreViewModel @Inject constructor(
             destinations = allDestinations,
             query = searchQuery,
             category = selectedCategory
-        ).let { list -> if (inSeasonOnly) list.filter { it.name in inSeason } else list }
+        )
+            .let { list -> if (inSeasonOnly) list.filter { it.name in inSeason } else list }
+            .let { list -> if (savedOnly) list.filter { it.name in savedNames } else list }
         // this@ExploreViewModel: the ViewModel's city list (with coordinates), not ExploreUiState.departureCities (names only)
         val origin = this@ExploreViewModel.departureCities
             .firstOrNull { it.name == selectedCity }?.location
