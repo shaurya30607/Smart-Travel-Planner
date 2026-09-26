@@ -55,6 +55,8 @@ import com.example.smarttravelplanner.ui.theme.PlayfairFontFamily
 @Composable
 fun DestinationDetailsSheet(
     destination: ExploreDestination,
+    /** Whether the current month is within the destination's best season. */
+    isInSeason: Boolean = false,
     /** e.g. "~1,050 km from Mumbai (straight line)"; null hides the row. */
     distanceFromLabel: String? = null,
     onDismiss: () -> Unit,
@@ -195,7 +197,7 @@ fun DestinationDetailsSheet(
                 )
                 FactCard(
                     icon = Icons.Outlined.WbSunny,
-                    label = "Best time",
+                    label = if (isInSeason) "Best time · in season now" else "Best time",
                     value = destination.bestSeason.removePrefix("Best: "),
                     modifier = Modifier.weight(1f)
                 )

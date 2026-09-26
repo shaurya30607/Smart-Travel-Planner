@@ -19,6 +19,10 @@ data class ExploreUiState(
     val departureCities: List<String> = emptyList(),
     val selectedCity: String = "New Delhi",
     val sortOrder: ExploreSortOrder = ExploreSortOrder.RECOMMENDED,
+    /** When true, only destinations whose best season includes the current month are shown. */
+    val inSeasonOnly: Boolean = false,
+    /** Names of destinations that are in season this month (drives the "In season" badge). */
+    val inSeasonNames: Set<String> = emptySet(),
     /** Destinations after search + category filters (and sorting) have been applied. */
     val destinations: List<ExploreDestination> = emptyList(),
     /** Straight-line km from [selectedCity] to each destination, keyed by destination name. */
@@ -27,5 +31,7 @@ data class ExploreUiState(
     val selectedDestination: ExploreDestination? = null
 ) {
     val hasActiveFilters: Boolean
-        get() = searchQuery.isNotBlank() || selectedCategory != DestinationFilter.ALL
+        get() = searchQuery.isNotBlank() ||
+            selectedCategory != DestinationFilter.ALL ||
+            inSeasonOnly
 }
