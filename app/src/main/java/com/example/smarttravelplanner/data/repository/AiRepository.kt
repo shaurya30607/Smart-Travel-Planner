@@ -34,9 +34,7 @@ interface AiRepository {
         weatherForecast: List<DayWeather>? = null,
         adults: Int = 1,
         kids: Int = 0,
-        userPreferences: UserTravelPreferences? = null,
-        /** Pre-formatted knowledge-base passages (TripWeaver RAG); empty when retrieval is off. */
-        retrievedContext: String = ""
+        userPreferences: UserTravelPreferences? = null
     ): Result<GeneratedItineraryDto>
 
     suspend fun chat(userMessage: String, model: String): Result<String>
