@@ -34,8 +34,7 @@ class AiRepositoryImpl @Inject constructor(
         weatherForecast: List<DayWeather>?,
         adults: Int,
         kids: Int,
-        userPreferences: UserTravelPreferences?,
-        retrievedContext: String
+        userPreferences: UserTravelPreferences?
     ): Result<GeneratedItineraryDto> {
         val prefs = userPreferencesRepository.userPreferences.first()
         val resolvedTravelPrefs = userPreferences ?: runCatching {
@@ -64,8 +63,7 @@ class AiRepositoryImpl @Inject constructor(
                 enableWebGrounding = false,
                 adults             = adults,
                 kids               = kids,
-                userPreferences    = resolvedTravelPrefs,
-                retrievedContext   = retrievedContext
+                userPreferences    = resolvedTravelPrefs
             )
         } else {
             // Cloud Gemini (Default: gemini-3.1-flash-lite; gemini-3.8-flash if manually chosen)
@@ -87,8 +85,7 @@ class AiRepositoryImpl @Inject constructor(
                 enableWebGrounding = prefs.enableWebGrounding,
                 adults             = adults,
                 kids               = kids,
-                userPreferences    = resolvedTravelPrefs,
-                retrievedContext   = retrievedContext
+                userPreferences    = resolvedTravelPrefs
             )
         }
     }

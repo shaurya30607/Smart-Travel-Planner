@@ -8,7 +8,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import com.example.smarttravelplanner.ui.components.RagSourcesCard
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -791,12 +790,6 @@ private fun TimelineContent(
                     CircularProgressIndicator(color = Amber)
                 }
             }
-        }
-
-        // TripWeaver: knowledge-base passages that informed this itinerary.
-        // Renders nothing when the trip was generated without retrieval.
-        item(key = "rag_sources") {
-            RagSourcesCard(tripId = trip.id)
         }
     }
 }
