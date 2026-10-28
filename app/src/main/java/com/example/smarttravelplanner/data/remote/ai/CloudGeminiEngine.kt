@@ -35,7 +35,8 @@ class CloudGeminiEngine @Inject constructor(
         enableWebGrounding: Boolean,
         adults: Int,
         kids: Int,
-        userPreferences: UserTravelPreferences?
+        userPreferences: UserTravelPreferences?,
+        retrievedContext: String
     ): Result<GeneratedItineraryDto> = withContext(Dispatchers.IO) {
         runCatching {
             val prefs = userPreferencesRepository.userPreferences.first()
@@ -66,7 +67,8 @@ class CloudGeminiEngine @Inject constructor(
                 enableWebGrounding = isWebGroundingEnabled,
                 adults             = adults,
                 kids               = kids,
-                userPreferences    = userPreferences
+                userPreferences    = userPreferences,
+                retrievedContext   = retrievedContext
             )
 
             val tools = if (isWebGroundingEnabled) {

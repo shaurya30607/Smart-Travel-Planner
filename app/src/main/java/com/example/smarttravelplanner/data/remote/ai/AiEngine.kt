@@ -23,7 +23,12 @@ interface AiEngine {
         enableWebGrounding: Boolean = false,
         adults: Int = 1,
         kids: Int = 0,
-        userPreferences: UserTravelPreferences? = null
+        userPreferences: UserTravelPreferences? = null,
+        /**
+         * Pre-formatted passages from the curated knowledge base (TripWeaver RAG).
+         * Empty string means no retrieval happened and the prompt is unchanged.
+         */
+        retrievedContext: String = ""
     ): Result<GeneratedItineraryDto>
 
     suspend fun chat(userMessage: String, model: String): Result<String>

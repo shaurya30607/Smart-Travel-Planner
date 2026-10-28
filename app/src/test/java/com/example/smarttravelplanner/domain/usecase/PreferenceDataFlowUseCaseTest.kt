@@ -130,6 +130,10 @@ class PreferenceDataFlowUseCaseTest {
         var lastCapturedDestination: String? = null
         var lastCapturedDays: Int = 0
 
+        /** TripWeaver: the retrieved knowledge-base block handed to the AI layer. */
+        var lastCapturedRetrievedContext: String = ""
+
+
         override suspend fun generateItinerary(
             destination: String,
             days: Int,
@@ -142,11 +146,13 @@ class PreferenceDataFlowUseCaseTest {
             weatherForecast: List<DayWeather>?,
             adults: Int,
             kids: Int,
-            userPreferences: UserTravelPreferences?
+            userPreferences: UserTravelPreferences?,
+            retrievedContext: String
         ): Result<GeneratedItineraryDto> {
             lastCapturedPreferences = userPreferences
             lastCapturedDestination = destination
             lastCapturedDays = days
+            lastCapturedRetrievedContext = retrievedContext
 
             // Return a minimal valid GeneratedItineraryDto
             val dummyActivities = listOf(

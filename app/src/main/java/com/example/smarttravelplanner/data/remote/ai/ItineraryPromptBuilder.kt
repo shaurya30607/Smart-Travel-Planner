@@ -2,6 +2,7 @@ package com.example.smarttravelplanner.data.remote.ai
 
 import com.example.smarttravelplanner.domain.model.DayWeather
 import com.example.smarttravelplanner.domain.model.UserTravelPreferences
+import com.example.smarttravelplanner.data.rag.RetrievedChunk
 import com.example.smarttravelplanner.domain.util.WeatherPromptFormatter
 
 /**
@@ -196,6 +197,38 @@ object ItineraryPromptBuilder {
         - Structure your response cleanly with bullet points and bold highlights for effortless scanning.
     """.trimIndent()
 
+    /**
+     * Formats retrieved knowledge-base passages into the block that is placed in
+     * front of the model. Returns an empty string when nothing was retrieved, so
+     * the prompt is byte-for-byte unchanged whenever RAG is off or the destination
+     * is not covered by the corpus.
+     */
+    fun buildRetrievedContextBlock(passages: List<RetrievedChunk>): String {
+        if (passages.isEmpty()) return ""
+        return buildString {
+            appendLine()
+            appendLine("RETRIEVED TRAVEL CONTEXT (curated knowledge base):")
+            appendLine("The passages below were retrieved for this destination before you were asked to plan.")
+            appendLine("Treat them as the most reliable information you have about this place.")
+            appendLine("- Use only what is relevant to the traveller's request; ignore the rest.")
+            appendLine("- Do not contradict a passage. If a passage gives a figure, stay consistent with it.")
+            appendLine("- Cost figures here are labelled ESTIMATES, not live prices. Never present them as")
+            appendLine("  confirmed or bookable rates.")
+            appendLine("- Do not invent additional sources, and do not claim a passage says more than it does.")
+            appendLine()
+            passages.forEachIndexed { index, retrieved ->
+                val c = retrieved.chunk
+                append("[").append(index + 1).append("] ")
+                append(c.destination).append(" \u00b7 ").append(c.topicLabel())
+                append(" \u2014 ").append(c.sourceName).append(" (as of ").append(c.asOf).append(")")
+                c.costBasis?.let { append(" [").append(it).append("]") }
+                appendLine()
+                appendLine(c.text)
+                appendLine()
+            }
+        }.trimEnd()
+    }
+
     fun buildUserMessage(
         destination: String,
         days: Int,
@@ -208,7 +241,8 @@ object ItineraryPromptBuilder {
         enableWebGrounding: Boolean = false,
         adults: Int = 1,
         kids: Int = 0,
-        userPreferences: UserTravelPreferences? = null
+        userPreferences: UserTravelPreferences? = null,
+        retrievedContext: String = ""
     ): String {
         val interestText = interests.ifEmpty { listOf("General Sightseeing", "Local Food", "Culture") }.joinToString(", ")
         val (paceGuideline, activityCountGuideline) = when (travelStyle.lowercase()) {
@@ -340,6 +374,7 @@ object ItineraryPromptBuilder {
             $soloSection
             $preferencesContext
             $webGroundingContext
+            $retrievedContext
             
             REQUIREMENTS FOR THIS ITINERARY:
             1. Geographic Logic: Anchor each day to a specific neighborhood or zone so travel between stops is effortless.
